@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Geovisor Empresarial por Sector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    #map { height: 100vh; }
+
+    #filtro {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 8px;
+      border-radius: 6px;
+      z-index: 1000;
+      font-family: Arial, sans-serif;
+    }
+
+    #filtro select {
+      display: block;
+      margin-bottom: 6px;
+      width: 200px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div id="filtro">
+  <label for="tamano">Filtrar por tamaño:</label>
+  <select id="tamano">
+    <option value="Todos">Todos</option>
+    <option value="Microempresa">Microempresa</option>
+    <option value="Pequeña">Pequeña</option>
+    <option value="Mediana">Mediana</option>
+    <option value="Gran empresa">Gran empresa</option>
+  </select>
+
+  <label for="departamento">Departamento:</label>
+  <select id="departamento">
+    <option value="Todos">Todos</option>
+  </select>
+
+  <label for="sector">Sector económico:</label>
+  <select id="sector">
+    <option value="Todos">Todos</option>
+  </select>
+</div>
+
+<div id="map"></div>
+
+<script>
+  var accessToken = 'pk.eyJ1Ijoibm1vcmlmZXJuYW5kZXoiLCJhIjoiY21icmEzZnhjMDgycjJtb2dzZWg4Y2J4dyJ9.aNUricrVz7rv2oYcRX1IAg';
+  var map = L.map('map').setView([-9.19, -75.02], 6);
+
+  L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${accessToken}`, {
+    tileSize: 512,
+    zoomOffset: -1,
+    attribution: '© Mapbox'
+  }).addTo(map);
+
+  let geojsonData;
+  let capaEmpresas;
+
+  function colorPorTamano(tamano) {
+    switch (tamano.trim()) {
+      case 'Microempresa': return 'orange';
+      case 'Pequeña': return 'deeppink';
+      case 'Mediana': return '#00bfff'; // azul claro
+      case 'Gran empresa': return 'yellow';
+      default: return 'gray';
+    }
+  }
+
+  function aplicarFiltros() {
+    const tamano = document.getElementById("tamano").value;
+    const dpto = document.getElementById("departamento").value;
+    const sector = document.getElementById("sector").value;
+
+    if (capaEmpresas) {
+      map.removeLayer(capaEmpresas);
+    }
+
+    const filtradas = {
+      type: "FeatureCollection",
+      features: geojsonData.features.filter(f =>
+        (tamano === "Todos" || f.properties.TAMANO.trim() === tamano) &&
+        (dpto === "Todos" || f.properties.DEPARTAMENTO === dpto) &&
+        (sector === "Todos" || f.properties.SECTOR === sector)
+      )
+    };
+
+    capaEmpresas = L.geoJSON(filtradas, {
+      pointToLayer: function (feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 4,
+          color: colorPorTamano(feature.properties.TAMANO),
+          fillColor: colorPorTamano(feature.properties.TAMANO),
+          fillOpacity: 0.75,
+          weight: 1
+        });
+      },
+      onEachFeature: function (feature, layer) {
+        let popup = `<b>Departamento:</b> ${feature.properties.DEPARTAMENTO}<br>
+                     <b>Tamaño:</b> ${feature.properties.TAMANO}<br>
+                     <b>Sector:</b> ${feature.properties.SECTOR}<br>
+                     <b>Ventas:</b> ${feature.properties.RANGO_VENTA}<br>
+                     <b>Trabajadores:</b> ${feature.properties.RANGO_TRABAJADOR}`;
+        layer.bindPopup(popup);
+      }
+    }).addTo(map);
+  }
+
+  fetch("empresas_peru_sector.geojson")
+    .then(res => res.json())
+    .then(data => {
+      geojsonData = data;
+
+      const departamentos = new Set();
+      const sectores = new Set();
+
+      geojsonData.features.forEach(f => {
+        departamentos.add(f.properties.DEPARTAMENTO);
+        sectores.add(f.properties.SECTOR);
+      });
+
+      const selDep = document.getElementById("departamento");
+      Array.from(departamentos).sort().forEach(dep => {
+        let opt = document.createElement("option");
+        opt.value = dep;
+        opt.text = dep;
+        selDep.add(opt);
+      });
+
+      const selSector = document.getElementById("sector");
+      Array.from(sectores).sort().forEach(sec => {
+        let opt = document.createElement("option");
+        opt.value = sec;
+        opt.text = sec;
+        selSector.add(opt);
+      });
+
+      aplicarFiltros();
+    })
+    .catch(err => console.error("Error al cargar GeoJSON:", err));
+
+  document.getElementById("tamano").addEventListener("change", aplicarFiltros);
+  document.getElementById("departamento").addEventListener("change", aplicarFiltros);
+  document.getElementById("sector").addEventListener("change", aplicarFiltros);
+</script>
+
+</body>
+</html>
