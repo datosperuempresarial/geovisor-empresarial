@@ -1,55 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Geovisor Empresarial por Sector</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    #map { height: 100vh; }
-    #filtro {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: white;
-      padding: 8px;
-      border-radius: 6px;
-      z-index: 1000;
-      font-family: Arial, sans-serif;
-    }
-    #filtro select {
-      display: block;
-      margin-bottom: 6px;
-      width: 200px;
-    }
-  </style>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</head>
-<body>
-
-<div id="filtro">
-  <label for="tamano">Filtrar por tamaño:</label>
-  <select id="tamano">
-    <option value="Todos">Todos</option>
-    <option value="Microempresa">Microempresa</option>
-    <option value="Pequeña">Pequeña</option>
-    <option value="Mediana">Mediana</option>
-    <option value="Gran empresa">Gran empresa</option>
-  </select>
-
-  <label for="departamento">Departamento:</label>
-  <select id="departamento">
-    <option value="Todos">Todos</option>
-  </select>
-
-  <label for="sector">Sector económico:</label>
-  <select id="sector">
-    <option value="Todos">Todos</option>
-  </select>
-</div>
-
-<div id="map"></div>
-
 <script>
   var accessToken = 'pk.eyJ1Ijoibm1vcmlmZXJuYW5kZXoiLCJhIjoiY21icmEzZnhjMDgycjJtb2dzZWg4Y2J4dyJ9.aNUricrVz7rv2oYcRX1IAg';
   var map = L.map('map').setView([-9.19, -75.02], 6);
@@ -112,7 +60,8 @@
     }).addTo(map);
   }
 
-  fetch("https://gdrive.guru/api/1bDf0brJZrH_NzCzGIZbLChYJes0z43d7")
+  // CORREGIDO: ruta correcta al archivo GeoJSON en tu GitHub
+  fetch("empresas_peru_ligero.geojson")
     .then(res => res.json())
     .then(data => {
       geojsonData = data;
@@ -143,12 +92,9 @@
 
       aplicarFiltros();
     })
-    .catch(err => console.error("Error al cargar GeoJSON desde Google Drive:", err));
+    .catch(err => console.error("Error al cargar el archivo GeoJSON:", err));
 
   document.getElementById("tamano").addEventListener("change", aplicarFiltros);
   document.getElementById("departamento").addEventListener("change", aplicarFiltros);
   document.getElementById("sector").addEventListener("change", aplicarFiltros);
 </script>
-
-</body>
-</html>
